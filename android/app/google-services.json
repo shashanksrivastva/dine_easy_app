@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "323370384599",
+    "project_id": "dineeasy-3c331",
+    "storage_bucket": "dineeasy-3c331.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:323370384599:android:dd9559d89706add984c492",
+        "android_client_info": {
+          "package_name": "com.example.dine_easy_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQ5Laq7GNeL6ZB53KP_yY502htJ7VtB-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

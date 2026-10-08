@@ -41,7 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          await FirebaseAuth.instance.signInWithCredential(credential);
+          final userCredential =
+              await FirebaseAuth.instance.signInWithCredential(credential);
+          final user = userCredential.user;
           if (!mounted) return;
           setState(() {
             isLoading = false;
@@ -49,7 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const DashboardScreen(userName: 'Guest'),
+              builder: (context) => DashboardScreen(
+                userName: user?.phoneNumber ?? 'User',
+              ),
             ),
           );
         },
@@ -137,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primaryOrange.withOpacity(0.25),
+                          color: AppColors.primaryOrange.withValues(alpha: 0.25),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),

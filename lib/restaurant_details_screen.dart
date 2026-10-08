@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'booking_screen.dart';
+import 'package:dine_easy_app/theme/app_colors.dart';
+
 class RestaurantDetailsScreen extends StatefulWidget {
+  final Map<String, dynamic>? restaurantData;
   final String restaurantName;
 
   const RestaurantDetailsScreen({
     super.key,
+    this.restaurantData,
     this.restaurantName = 'The Urban Bowl',
   });
 
@@ -14,17 +19,137 @@ class RestaurantDetailsScreen extends StatefulWidget {
 }
 
 class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
-  static const Color primaryOrange = Color(0xFFF47B20);
-  static const Color darkOrange = Color(0xFFE4610A);
-  static const Color cream = Color(0xFFFFF8EF);
-  static const Color lightCream = Color(0xFFFFF1E1);
-  static const Color darkText = Color(0xFF242424);
-  static const Color greyText = Color(0xFF777777);
+  static const Color primaryOrange = AppColors.primaryOrange;
+  static const Color cream = AppColors.cream;
+  static const Color lightCream = AppColors.lightCream;
+  static const Color darkText = AppColors.darkText;
+  static const Color greyText = AppColors.greyText;
 
   int selectedTab = 0;
   bool isFavourite = false;
 
   final List<String> tabs = ['Overview', 'Menu', 'Reviews', 'Photos'];
+
+  // Dynamic getters from restaurantData
+  String get name => widget.restaurantData?['name'] as String? ?? widget.restaurantName;
+  String get image =>
+      widget.restaurantData?['image'] as String? ??
+      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200';
+  String get cuisine =>
+      widget.restaurantData?['cuisine'] as String? ?? 'Continental • Italian • North Indian';
+  String get rating => widget.restaurantData?['rating']?.toString() ?? '4.5';
+  String get distance => widget.restaurantData?['distance'] as String? ?? '2.4 km away';
+  String get address =>
+      widget.restaurantData?['address'] as String? ?? 'MG Road, Bengaluru, Karnataka';
+  String get averageCost => widget.restaurantData?['averageCost'] as String? ?? '₹800 for two';
+  String get timing => widget.restaurantData?['timing'] as String? ?? '11:00 AM – 11:00 PM';
+  String get phone => widget.restaurantData?['phone'] as String? ?? '+91 98765 43210';
+  String get description =>
+      widget.restaurantData?['description'] as String? ??
+      '$name brings you a unique dining experience with a perfect blend of global cuisines, premium ambience, and exceptional service.';
+
+  final List<Map<String, dynamic>> _cartItems = [];
+
+  double get _cartTotal {
+    double total = 0;
+    for (var item in _cartItems) {
+      final priceStr = (item['price'] as String? ?? '₹0')
+          .replaceAll('₹', '')
+          .replaceAll(',', '')
+          .trim();
+      final price = double.tryParse(priceStr) ?? 0;
+      final qty = (item['quantity'] as int? ?? 1);
+      total += price * qty;
+    }
+    return total;
+  }
+
+  void _addToCart(Map<String, dynamic> item) {
+    setState(() {
+      final existingIndex =
+          _cartItems.indexWhere((i) => i['name'] == item['name']);
+      if (existingIndex >= 0) {
+        _cartItems[existingIndex]['quantity'] =
+            (_cartItems[existingIndex]['quantity'] as int) + 1;
+      } else {
+        _cartItems.add({
+          'name': item['name'],
+          'price': item['price'],
+          'image': item['image'],
+          'quantity': 1,
+        });
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${item['name']} added to table order'),
+        duration: const Duration(milliseconds: 800),
+      ),
+    );
+  }
+
+  Widget _buildCartSummaryBar() {
+    if (_cartItems.isEmpty) return const SizedBox.shrink();
+
+    int totalCount =
+        _cartItems.fold(0, (sum, item) => sum + (item['quantity'] as int));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: lightCream,
+        border: Border(top: BorderSide(color: Colors.orange.shade200)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$totalCount ${totalCount == 1 ? 'Item' : 'Items'} selected',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: darkText,
+                ),
+              ),
+              Text(
+                'Total: ₹${_cartTotal.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: primaryOrange,
+                ),
+              ),
+            ],
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              _openBookingScreen();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryOrange,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 12,
+              ),
+            ),
+            icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+            label: const Text(
+              'View Cart & Book',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   final List<Map<String, dynamic>> popularDishes = [
     {
@@ -104,6 +229,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                 ],
               ),
             ),
+            _buildCartSummaryBar(),
             _buildBottomButtons(),
           ],
         ),
@@ -147,9 +273,9 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           child: _circleButton(
             icon: Icons.share_outlined,
             onTap: () {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Share restaurant')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Share $name')),
+              );
             },
           ),
         ),
@@ -159,9 +285,9 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           fit: StackFit.expand,
           children: [
             Image.network(
-              'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200',
+              image,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
+              errorBuilder: (context, error, stackTrace) {
                 return Container(
                   color: lightCream,
                   child: const Icon(
@@ -179,7 +305,10 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.65)],
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.65),
+                  ],
                 ),
               ),
             ),
@@ -193,7 +322,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
@@ -217,7 +346,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
     Color iconColor = darkText,
   }) {
     return Material(
-      color: Colors.white.withOpacity(0.95),
+      color: Colors.white.withValues(alpha: 0.95),
       shape: const CircleBorder(),
       elevation: 2,
       child: InkWell(
@@ -244,7 +373,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.restaurantName,
+            name,
             style: const TextStyle(
               fontSize: 27,
               fontWeight: FontWeight.w800,
@@ -258,9 +387,12 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
             children: [
               _ratingBadge(),
               const SizedBox(width: 8),
-              const Text(
-                '4.5',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              Text(
+                rating,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               const SizedBox(width: 5),
               const Text(
@@ -281,9 +413,9 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
 
           const SizedBox(height: 12),
 
-          const Text(
-            'Continental • Italian • North Indian',
-            style: TextStyle(
+          Text(
+            cuisine,
+            style: const TextStyle(
               color: greyText,
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -293,13 +425,13 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           const SizedBox(height: 8),
 
           Row(
-            children: const [
-              Icon(Icons.location_on_outlined, size: 19, color: greyText),
-              SizedBox(width: 4),
+            children: [
+              const Icon(Icons.location_on_outlined, size: 19, color: greyText),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  '2.4 km away  |  MG Road, Bengaluru, Karnataka',
-                  style: TextStyle(color: greyText, fontSize: 14),
+                  '$distance  |  $address',
+                  style: const TextStyle(color: greyText, fontSize: 14),
                 ),
               ),
             ],
@@ -468,11 +600,9 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
 
           const SizedBox(height: 10),
 
-          const Text(
-            'The Urban Bowl brings you a unique dining '
-            'experience with a perfect blend of global cuisines, '
-            'premium ambience and exceptional service.',
-            style: TextStyle(color: greyText, fontSize: 15, height: 1.55),
+          Text(
+            description,
+            style: const TextStyle(color: greyText, fontSize: 15, height: 1.55),
           ),
 
           const SizedBox(height: 8),
@@ -511,11 +641,18 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                   color: darkText,
                 ),
               ),
-              Text(
-                'View Menu',
-                style: TextStyle(
-                  color: primaryOrange,
-                  fontWeight: FontWeight.w700,
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedTab = 1;
+                  });
+                },
+                child: const Text(
+                  'View Menu',
+                  style: TextStyle(
+                    color: primaryOrange,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -528,7 +665,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: popularDishes.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              separatorBuilder: (context, _) => const SizedBox(width: 12),
               itemBuilder: (_, index) {
                 return _buildPopularDish(popularDishes[index]);
               },
@@ -554,7 +691,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
               Expanded(
                 child: _detailItem(
                   Icons.access_time,
-                  '11:00 AM – 11:00 PM',
+                  timing,
                   'Opening Hours',
                 ),
               ),
@@ -575,14 +712,14 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
               Expanded(
                 child: _detailItem(
                   Icons.payments_outlined,
-                  '₹800 for two',
+                  averageCost,
                   'Average Cost',
                 ),
               ),
               Expanded(
                 child: _detailItem(
                   Icons.phone_outlined,
-                  '+91 98765 43210',
+                  phone,
                   'Call Restaurant',
                 ),
               ),
@@ -640,7 +777,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
         border: Border.all(color: const Color(0xFFEDEDED)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -651,7 +788,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.network(
-            dish['image'],
+            dish['image'] as String,
             height: 105,
             width: double.infinity,
             fit: BoxFit.cover,
@@ -659,7 +796,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 8, 10, 5),
             child: Text(
-              dish['name'],
+              dish['name'] as String,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
@@ -668,7 +805,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              dish['price'],
+              dish['price'] as String,
               style: const TextStyle(
                 color: primaryOrange,
                 fontWeight: FontWeight.w800,
@@ -770,7 +907,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (_, index) {
           final selected = index == 0;
 
@@ -804,7 +941,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: Image.network(
-              item['image'],
+              item['image'] as String,
               width: 110,
               height: 110,
               fit: BoxFit.cover,
@@ -823,21 +960,21 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          item['name'],
+                          item['name'] as String,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                      _vegIndicator(item['veg']),
+                      _vegIndicator(item['veg'] as bool? ?? true),
                     ],
                   ),
 
                   const SizedBox(height: 5),
 
                   Text(
-                    item['description'],
+                    item['description'] as String,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -853,7 +990,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        item['price'],
+                        item['price'] as String,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -863,12 +1000,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                         height: 36,
                         child: OutlinedButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${item['name']} added'),
-                                duration: const Duration(milliseconds: 900),
-                              ),
-                            );
+                            _addToCart(item);
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: primaryOrange,
@@ -955,14 +1087,14 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
               color: cream,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Text(
-                  '4.5',
-                  style: TextStyle(fontSize: 42, fontWeight: FontWeight.w800),
+                  rating,
+                  style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w800),
                 ),
-                SizedBox(width: 20),
-                Column(
+                const SizedBox(width: 20),
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -985,7 +1117,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
           const SizedBox(height: 20),
           _reviewItem(
             'Rahul Sharma',
-            'Amazing food and excellent ambience.',
+            'Amazing food and excellent ambience at $name.',
             '4.8',
           ),
           _reviewItem('Priya Singh', 'Great place for family dinner.', '4.5'),
@@ -1037,7 +1169,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
 
   Widget _buildPhotos() {
     final images = [
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600',
+      image,
       'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=600',
       'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=600',
       'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600',
@@ -1079,7 +1211,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.10),
+            color: Colors.black.withValues(alpha: 0.10),
             blurRadius: 15,
             offset: const Offset(0, -4),
           ),
@@ -1138,8 +1270,16 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
   }
 
   void _openBookingScreen() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Booking screen will open here')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookingScreen(
+          restaurantName: name,
+          restaurantImage: image,
+          cartItems: _cartItems,
+          totalAmount: '₹${_cartTotal.toStringAsFixed(0)}',
+        ),
+      ),
     );
   }
 }

@@ -60,14 +60,18 @@ class _OtpScreenState extends State<OtpScreen> {
         smsCode: otp,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
 
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const DashboardScreen(userName: 'Guest'),
+          builder: (context) => DashboardScreen(
+            userName: user?.phoneNumber ?? 'User',
+          ),
         ),
       );
     } on FirebaseAuthException catch (exception) {
@@ -93,12 +97,16 @@ class _OtpScreenState extends State<OtpScreen> {
         phoneNumber: widget.mobileNumber,
         forceResendingToken: currentResendToken,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          await FirebaseAuth.instance.signInWithCredential(credential);
+          final userCredential =
+              await FirebaseAuth.instance.signInWithCredential(credential);
+          final user = userCredential.user;
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const DashboardScreen(userName: 'Guest'),
+              builder: (context) => DashboardScreen(
+                userName: user?.phoneNumber ?? 'User',
+              ),
             ),
           );
         },
